@@ -46,3 +46,9 @@ variable "public_subnets_ids" {
   description = "A list of IDs for the public subnets where the NAT instance will be placed."
   type        = list(string)
 }
+
+variable "single_nat_instance" {
+  description = "Enable Single nat Instance (true) or enable nat instance per AZ (false)"
+  type = bool
+  default = true
+}

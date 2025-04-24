@@ -47,24 +47,6 @@ resource "aws_iam_instance_profile" "nat_instance_profile" {
   role = aws_iam_role.ssm_agent_role.name
 }
 
-resource "aws_network_interface" "network_interface" {
-  source_dest_check = false
-  subnet_id         = var.public_subnets_ids[0]
-  security_groups   = [aws_security_group.nat_instance_sg.id]
-
-  tags = {
-    Name = "nat-instance-network-interface"
-  }
-}
-
-// Route private networks through NAT-Instance network interface.
-resource "aws_route" "route_to_nat_instace" {
-  destination_cidr_block = "0.0.0.0/0"
-  count                  = var.number_of_azs
-  network_interface_id   = aws_network_interface.network_interface.id
-  route_table_id         = tolist(data.aws_route_tables.route_tables_of_private_networks.ids[*])[count.index]
-}
-
 resource "tls_private_key" "nat_instance_private_key" {
   algorithm = "RSA"
   rsa_bits  = 4096
@@ -83,6 +65,39 @@ resource "aws_ssm_parameter" "nat_instance_ssm" {
 
   tags = {
   }
+}
+
+# condition ? value_if_true : value_if_false
+
+# If var.single_nat_instance is true, then nat_instance_count will be 1.
+# If var.single_nat_instance is false, then nat_instance_count will be the number of public subnets, i.e., length(var.public_subnets_ids).
+
+locals {
+  nat_instance_count = var.single_nat_instance ? 1 : length(var.public_subnets_ids)
+  subnets_to_use = var.single_nat_instance ? [var.public_subnets_ids[0]] : var.public_subnets_ids
+}
+
+
+resource "aws_network_interface" "network_interface" {
+  count             = local.nat_instance_count
+  source_dest_check = false
+  subnet_id         = local.subnets_to_use[count.index]
+  security_groups   = [aws_security_group.nat_instance_sg.id]
+  tags = {
+    Name = "nat-instance-network-interface-${count.index + 1}"
+  }
+}
+
+// Route private networks through NAT-Instance network interface.
+resource "aws_route" "route_to_nat_instace" {
+  destination_cidr_block = "0.0.0.0/0"
+  count                  = var.number_of_azs
+  # Select the network interface to route traffic through:
+  # - If using a single NAT instance, always use the first network interface (index 0)
+  # - If using multiple NAT instances (one per AZ), use modulo (%) to evenly assign each private subnetss route 
+  #   to one of the NAT interfaces — this maps private route tables to available NAT interfaces as round robin
+  network_interface_id   = var.single_nat_instance ? aws_network_interface.network_interface[0].id : aws_network_interface.network_interface[count.index % local.nat_instance_count].id
+  route_table_id         = tolist(data.aws_route_tables.route_tables_of_private_networks.ids[*])[count.index]
 }
 
 // Creating NAT Instance.
