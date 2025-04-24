@@ -24,6 +24,7 @@ module "nat_instance" {
   amazon_ec2_instance_virtualization_type = "hvm"
   amazon_owner_id                        = "137112412989"
   ssm_agent_policy                       = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+  single_nat_instance                     = false  # Set to true to use only one NAT instance (cost-saving), or false for high availability (one per AZ)
 }
 ```
 
