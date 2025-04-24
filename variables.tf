@@ -52,3 +52,27 @@ variable "single_nat_instance" {
   type        = bool
   default     = true
 }
+
+variable "root_block_device" {
+  description = "Root block device configuration for NAT instances"
+  type = list(object({
+    delete_on_termination = optional(bool, true)
+    encrypted             = optional(bool, false)
+    volume_size           = optional(number, 10)
+  }))
+  default = [
+    {
+      # Default settings are applied via the optional() type constructor above
+      # This empty object will use all the defaults:
+      # - volume_size: 10 GB
+      # - encrypted: false
+      # - delete_on_termination: true
+    }
+  ]
+}
+
+variable "enable_ebs_encryption" {
+  description = "Enable EBS Encryption"
+  type = bool
+  default = false
+}

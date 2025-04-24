@@ -103,6 +103,7 @@ resource "aws_route" "route_to_nat_instace" {
 // Creating NAT Instance.
 resource "aws_instance" "nat_instance" {
   // Controls if traffic is routed to the instance when the destination address does not match the instance. Used for NAT or VPNs.
+  
   count                       = local.nat_instance_count
   instance_type               = var.nat_instance_type
   key_name                    = aws_key_pair.nat_instance_key_pair.key_name
@@ -115,7 +116,31 @@ resource "aws_instance" "nat_instance" {
     network_interface_id = aws_network_interface.network_interface[count.index].id
   }
 
+  dynamic "root_block_device" {
+    for_each = var.root_block_device
+
+    content {
+      delete_on_termination = try(root_block_device.value.delete_on_termination, null)
+      encrypted             = var.enable_ebs_encryption ? true : try(root_block_device.value.encrypted, null)
+      volume_size           = try(root_block_device.value.volume_size, null)
+      volume_type           = "gp3"
+      tags = {
+        Name = "nat-instance-root-volume-${count.index + 1}"
+      }
+    }
+  }
+
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"  // IMDSv2 required for improved security
+    http_put_response_hop_limit = 1
+  }
+
   tags = {
     Name = "ec2-nat-instance-${count.index + 1}"
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
