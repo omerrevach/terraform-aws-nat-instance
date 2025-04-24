@@ -10,7 +10,7 @@ variable "amazon_ec2_instance_virtualization_type" {
   default     = "hvm"
 }
 
-variable "amazon_owner_id" { 
+variable "amazon_owner_id" {
   description = "The AWS account ID of the AMI owner. Used to ensure you're using official or trusted AMIs."
   type        = string
   default     = "137112412989"
@@ -49,6 +49,6 @@ variable "public_subnets_ids" {
 
 variable "single_nat_instance" {
   description = "Enable Single nat Instance (true) or enable nat instance per AZ (false)"
-  type = bool
-  default = true
+  type        = bool
+  default     = true
 }

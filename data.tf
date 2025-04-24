@@ -1,11 +1,11 @@
 // Get VPC data.
 data "aws_vpc" "current_vpc" {
-    id = var.aws_vpc_id
+  id = var.aws_vpc_id
 }
 
 // Choosing the image for NAT Instance.
 data "aws_ami" "amazon_linux" {
-most_recent = true
+  most_recent = true
   filter {
     name   = "name"
     values = [var.amazon_ec2_linux_image]
@@ -32,9 +32,9 @@ data "aws_instance" "nat_instance_data" {
 
 // Get route tables of private networks in in provided VPC.
 data "aws_route_tables" "route_tables_of_private_networks" {
-  vpc_id   = var.aws_vpc_id
-    
-    filter {
+  vpc_id = var.aws_vpc_id
+
+  filter {
     name   = "tag:Name"
     values = ["*private*"]
   }
