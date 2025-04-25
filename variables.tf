@@ -16,12 +16,6 @@ variable "amazon_owner_id" {
   default     = "137112412989"
 }
 
-variable "ssm_agent_policy" {
-  description = "The IAM policy ARN that grants permissions for the Amazon SSM agent to manage the instance."
-  type        = string
-  default     = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
-
 variable "aws_vpc_id" {
   description = "The ID of the VPC where the NAT instance and related resources will be deployed."
   type        = string

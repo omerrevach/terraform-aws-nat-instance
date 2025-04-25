@@ -22,51 +22,6 @@ resource "aws_security_group" "nat_instance_sg" {
   }
 }
 
-// Create role.
-resource "aws_iam_role" "ssm_agent_role" {
-  name = "iam-role-ssm-agent"
-  assume_role_policy = jsonencode({
-    "Version" : "2012-10-17",
-    "Statement" : {
-      "Effect" : "Allow",
-      "Principal" : { "Service" : "ec2.amazonaws.com" },
-      "Action" : "sts:AssumeRole"
-    }
-  })
-}
-
-// Attach role to policy.
-resource "aws_iam_role_policy_attachment" "attach_ssm_role" {
-  policy_arn = var.ssm_agent_policy
-  role       = aws_iam_role.ssm_agent_role.name
-}
-
-// Create instance profile.
-resource "aws_iam_instance_profile" "nat_instance_profile" {
-  name = "iam-profile-nat-instance"
-  role = aws_iam_role.ssm_agent_role.name
-}
-
-resource "tls_private_key" "nat_instance_private_key" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
-}
-
-resource "aws_key_pair" "nat_instance_key_pair" {
-  key_name   = "ec2-nat-instance"
-  public_key = tls_private_key.nat_instance_private_key.public_key_openssh
-}
-
-resource "aws_ssm_parameter" "nat_instance_ssm" {
-  name        = "/infra/ec2-nat-instance/key"
-  description = "ec2-nat-instance ssh key"
-  type        = "SecureString"
-  value       = tls_private_key.nat_instance_private_key.private_key_pem
-
-  tags = {
-  }
-}
-
 # condition ? value_if_true : value_if_false
 
 # If var.single_nat_instance is true, then nat_instance_count will be 1.
@@ -134,6 +89,10 @@ resource "aws_instance" "nat_instance" {
     http_endpoint               = "enabled"
     http_tokens                 = "required"  // IMDSv2 required for improved security
     http_put_response_hop_limit = 1
+  }
+
+  maintenance_options {
+    auto_recovery = "default"  // AWS recommended setting, enables auto-recovery
   }
 
   tags = {
